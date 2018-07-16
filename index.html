@@ -76,7 +76,7 @@
   //Load a new map in the 'map' HTML div
   var map = new mapboxgl.Map({
     container: 'map',
-    style: 'http://localhost:32768/styles/klokantech-basic/style.json',
+    style: 'style.json',
     center: [103.8497472, 1.291610266],
     zoom: 11
   });
@@ -117,7 +117,7 @@
       }
     });
 	  map.addLayer({
-      id: 'Singapore_shoppingmalls',
+      id: 'Singapore_meals',
       type: 'circle',
       source: {
           type: 'geojson',
@@ -208,7 +208,7 @@
 	  
 	map.on('click', function(e) {
       var features1 = map.queryRenderedFeatures(e.point, {
-        layers: ['Singapore_shoppingmalls']
+        layers: ['Singapore_meals']
       });
 
       if (!features1.length) {
@@ -236,7 +236,7 @@
     // by changing the cursor style to 'pointer'.
     map.on('mousemove', function(e) {
       var features1 = map.queryRenderedFeatures(e.point, {
-        layers: ['Singapore_shoppingmalls']
+        layers: ['Singapore_meals']
       });
       map.getCanvas().style.cursor = (features1.length) ? 'pointer' : '';
     });
