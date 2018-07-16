@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset='utf-8'>
+  <title>Singapore Hotels</title>
+  <script src='mapbox-gl.js'></script>
+  <link href='mapbox-gl.css' rel='stylesheet' />
+  <link href='base.css' rel='stylesheet' />
+  <style>
+  #map {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+  }
+  
+  #locations {
+    position: absolute;
+  }
+  
+  .legend {
+    background-color: #fff;
+    border-radius: 3px;
+    bottom: 30px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.10);
+    font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+    padding: 10px;
+    position: absolute;
+    right: 10px;
+    z-index: 1;
+  }
+  
+  .legend h4 {
+    margin: 0 0 10px;
+  }
+
+  .legend p {
+    margin-left: 30px;
+    position: absolute;
+    display: block;
+    top: 0;
+  }
+
+  .legend div {
+    position:relative;
+  }
+
+  .legend div span {
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 5px;
+    opacity:0.8;
+    background-color:#E74C3C;
+  }
+  
+  .mapboxgl-popup {
+    max-width: 400px;
+    font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+  }
+  </style>
+</head>
+
+<body>
+  <div id='map'></div>
+  <!-- style the legend !-->
+  <!-- add html elements to the legend !-->
+  <!--<div id='legend' class='legend'>
+    <h4>Price (RMB)</h4>
+  </div>!-->
+  <script>
+  //Put your Mapbox Public Access token here
+  mapboxgl.accessToken = 'pk.eyJ1Ijoidml2YW5zeHUiLCJhIjoiY2ppeWI1a2hjMDhtNTN3cGo3eDNxMGtjMSJ9.FjXwyZRWC_SGx2L5U74ezA';
+
+  //Load a new map in the 'map' HTML div
+  var map = new mapboxgl.Map({
+    container: 'map',
+    style: 'http://localhost:32768/styles/klokantech-basic/style.json',
+    center: [103.8497472, 1.291610266],
+    zoom: 11
+  });
+
+  // Store an array of quantiles
+  var max = 2400;
+  var fifth = 2400 / 6;
+  var quantiles = [];
+  for (i=0; i<6; i++) {
+    var quantile = (i + 1) * fifth;
+    quantiles.push(quantile);
+  }
+
+  //Load the vector tile source from our Mapbox Pedestrian traffic example
+  map.on('load', function() {
+    //Add the circle layer to the map
+    map.addLayer({
+      id: 'Singapore_hotels',
+      type: 'circle',
+      source: {
+          type: 'geojson',
+          data: 'features1.geojson' //Your Mapbox tileset Map ID
+      },
+      //name of tilesets
+     // 'source-layer': 'hotel_modified-1z3i3t',
+      paint: {
+        'circle-color': '#1CACFE',
+        //Add data-driven styles for circle radius
+        'circle-radius': {
+          property: 'price',
+          type: 'exponential',
+          stops: [
+            [0, 2],
+            [2400, 16]
+          ]
+        },
+        'circle-opacity': 0.8
+      }
+    });
+	  map.addLayer({
+      id: 'Singapore_shoppingmalls',
+      type: 'circle',
+      source: {
+          type: 'geojson',
+          data: 'meals.geojson' //Your Mapbox tileset Map ID
+      },
+      //name of tilesets
+     // 'source-layer': 'hotel_modified-1z3i3t',
+      paint: {
+        'circle-color': '#00AB15',
+        //Add data-driven styles for circle radius
+        'circle-radius': {
+          property: 'price',
+          type: 'exponential',
+          stops: [
+            [4, 2],
+            [200, 16]
+          ]
+        },
+        'circle-opacity': 0.2
+      }
+    });
+
+    // By default, exponential property functions have a base of 1.
+    // Exponential functions with a base of 1 are linear.
+    // The relationship between the radius of any point and the number of pedestrians is:
+    // radius = rateOfChange * numberOfPedestrians + radiusAtZero
+    /*var minRadius = 2;
+    var maxRadius = 16;
+    var minPrice = 0;
+    var maxPrice = 2400;
+
+    // Find the rateOfChange using two points
+    var rateOfChange = (maxRadius - minRadius) / (maxPrice - minPrice);
+
+    // Use the rateOfChange to solve for for radiusAtZero
+    // radius = rateOfChange * numberOfPedestrians + radiusAtZero
+    var radiusAtZero = maxRadius - (rateOfChange * maxPrice);
+
+    var legend = document.getElementById('legend');
+    function circleSize(quantile) {
+      var radius = (rateOfChange * quantile) + radiusAtZero;
+      var diameter = radius * 2;
+      return diameter;
+    }
+    quantiles.forEach(function(quantile){
+      legend.insertAdjacentHTML('beforeend', '<div><span style="width:' + circleSize(quantile) + 'px;height:' + circleSize(quantile) + 'px;margin: 0 ' + [(20 - circleSize(quantile)) / 2 ] + 'px"></span><p>' + quantile + '</p></div>');
+    });*/
+
+    // Add zoom and rotation controls to the map.
+    map.addControl(new mapboxgl.NavigationControl({
+      'position': 'top-left'
+    }));
+
+    // When a click event occurs near a place, open a popup at the location of
+    // the feature, with description HTML from its properties.
+    map.on('click', function(e) {
+      var features = map.queryRenderedFeatures(e.point, {
+        layers: ['Singapore_hotels']
+      });
+
+      if (!features.length) {
+        return;
+      }
+
+      var feature = features[0];
+
+      // Populate the popup and set its coordinates
+      // based on the feature found.
+      var popup = new mapboxgl.Popup()
+        .setLngLat(feature.geometry.coordinates)
+        .setHTML('<div id="popup" class="popup" style="z-index: 10;"> <h5> Detail: </h5>' +
+          '<ul class="list-group">' +
+          '<li class="list-group-item"> Name: ' + feature.properties['English_name'] + " </li>" +
+          '<li class="list-group-item"> Price:  ¥' + feature.properties['price'] + " </li>" +
+          '<li class="list-group-item"> Rating: ' + feature.properties['rating'] + " </li>" +
+          '</ul> </div>')
+        .addTo(map);
+    });
+
+    // Use the same approach as above to indicate that the symbols are clickable
+    // by changing the cursor style to 'pointer'.
+    map.on('mousemove', function(e) {
+      var features = map.queryRenderedFeatures(e.point, {
+        layers: ['Singapore_hotels']
+      });
+      map.getCanvas().style.cursor = (features.length) ? 'pointer' : '';
+    });
+	  
+	map.on('click', function(e) {
+      var features1 = map.queryRenderedFeatures(e.point, {
+        layers: ['Singapore_shoppingmalls']
+      });
+
+      if (!features1.length) {
+        return;
+      }
+
+      var feature1 = features1[0];
+
+      // Populate the popup and set its coordinates
+      // based on the feature found.
+      var popup1 = new mapboxgl.Popup()
+        .setLngLat(feature1.geometry.coordinates)
+        .setHTML('<div id="popup" class="popup" style="z-index: 10;"> <h5> Detail: </h5>' +
+          '<ul class="list-group">' +
+          '<li class="list-group-item"> Name: ' + feature1.properties['name'] + " </li>" +
+          '<li class="list-group-item"> Price:  $' + feature1.properties['price'] + " </li>" +
+          '<li class="list-group-item"> Meal: ' + feature1.properties['meal'] + " </li>" +
+				 
+          '<li class="list-group-item"> Review Num: ' + feature1.properties['review_number'] + " </li>"+
+          '</ul> </div>')
+        .addTo(map);
+    });
+
+    // Use the same approach as above to indicate that the symbols are clickable
+    // by changing the cursor style to 'pointer'.
+    map.on('mousemove', function(e) {
+      var features1 = map.queryRenderedFeatures(e.point, {
+        layers: ['Singapore_shoppingmalls']
+      });
+      map.getCanvas().style.cursor = (features1.length) ? 'pointer' : '';
+    });
+  });
+  </script>
+</body>
+
+</html>
+
